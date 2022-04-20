@@ -1,0 +1,57 @@
+var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;
+
+
+// Create connection to database
+var config = {
+  userName: 'ServerAdmin', // update me
+  password: '4j5Q9Kzl43t8', // update me
+  server: 'hl-test-server.database.windows.net', // update me
+  options: {
+      database: 'test', //update me
+      encrypt: true
+  }
+}
+var connection = new Connection(config);
+
+// Attempt to connect and execute queries if connection goes through
+connection.on('connect', function(err) {
+    if (err) {
+        console.log(err)
+    }
+    else{
+        insertIntoDatabase()
+    }
+});
+
+function queryDatabase(){
+    console.log('Reading rows from the Table...');
+
+    // Read all rows from table
+    request = new Request(
+        "SELECT pc.Name as CategoryName, p.name as ProductName FROM [SalesLT].[ProductCategory] pc JOIN [SalesLT].[Product] p ON pc.productcategoryid = p.productcategoryid",
+        function(err, rowCount, rows) {
+            console.log(rowCount + ' row(s) returned');
+        }
+    );
+
+    request.on('row', function(columns) {
+        columns.forEach(function(column) {
+            console.log("%s\t%s", column.metadata.colName, column.value);
+        });
+    });
+
+    connection.execSql(request);
+}
+
+function insertIntoDatabase(){
+    console.log("Inserting a brand new product into database...");
+    request = new Request(
+      "INSERT INTO SalesLT.Product (Name, ProductNumber, Color, StandardCost, ListPrice, SellStartDate) OUTPUT INSERTED.ProductID VALUES ('BrandNewProduct', '200989', 'Blue', 75, 80, '7/1/2016')"
+        // "INSERT INTO SalesLT.Product (Name, ProductNumber, Color, StandardCost, ListPrice, SellStartDate) OUTPUT INSERTED.ProductID VALUES ('OtherNewProduct', '300988', 'Green', 75, 80, '4/7/2016')",
+        function(err, rowCount, rows) {
+            console.log(rowCount + ' row(s) inserted');
+        }
+    );
+    connection.execSql(request);
+}
